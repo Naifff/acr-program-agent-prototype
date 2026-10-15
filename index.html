@@ -1,0 +1,353 @@
+<meta charset="utf-8">
+<title>Методист АЦР · агент программ</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: left stepper (8 real process steps), one working panel; numbers in tabular mono */
+:root{
+  --bg:#f6f7f4; --panel:#ffffff; --fg:#17201c; --muted:#5d6b64; --line:#d9ded9;
+  --accent:#1f6f5f; --accent-soft:#e3f1ec; --ok:#237a4b; --ok-soft:#e1f3e8;
+  --warn:#9a6208; --warn-soft:#fbeed4; --bad:#b4322e; --bad-soft:#f9e3e1; --info-soft:#e8edf5;
+  --display:"Manrope","IBM Plex Sans",system-ui,sans-serif;
+  --body:"IBM Plex Sans",system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#141917; --panel:#1c2320; --fg:#e8ece9; --muted:#9aa69f; --line:#2e3833;
+  --accent:#6fc5ad; --accent-soft:#1f3b33; --ok:#7fd39f; --ok-soft:#1d3a2a;
+  --warn:#f0bc5e; --warn-soft:#423314; --bad:#f08a86; --bad-soft:#44201f; --info-soft:#243040; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#141917; --panel:#1c2320; --fg:#e8ece9; --muted:#9aa69f; --line:#2e3833;
+  --accent:#6fc5ad; --accent-soft:#1f3b33; --ok:#7fd39f; --ok-soft:#1d3a2a;
+  --warn:#f0bc5e; --warn-soft:#423314; --bad:#f08a86; --bad-soft:#44201f; --info-soft:#243040; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.5;padding-inline:16px;padding-block:16px}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0}
+h1{font-size:1.25rem;font-weight:800}
+h2{font-size:1.15rem;font-weight:700}
+h3{font-size:.95rem;font-weight:700}
+.top{max-width:1180px;margin:0 auto 14px;display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;justify-content:space-between}
+.top .brand{display:flex;gap:10px;align-items:center}
+.logo{width:34px;height:34px;border-radius:9px;background:var(--accent);color:#fff;display:grid;place-items:center;font-family:var(--display);font-weight:800}
+.top small{color:var(--muted);display:block}
+.chip{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:3px 10px;font-size:.8rem;font-weight:500;background:var(--info-soft)}
+.chip.ok{background:var(--ok-soft);color:var(--ok)} .chip.warn{background:var(--warn-soft);color:var(--warn)} .chip.bad{background:var(--bad-soft);color:var(--bad)} .chip.acc{background:var(--accent-soft);color:var(--accent)}
+.app{max-width:1180px;margin:0 auto;display:grid;grid-template-columns:250px minmax(0,1fr);gap:16px}
+@media (max-width:820px){.app{grid-template-columns:1fr}}
+.steps{display:flex;flex-direction:column;gap:4px}
+.step{display:flex;gap:10px;align-items:flex-start;padding:9px 10px;border-radius:10px;border:1px solid transparent;background:none;color:var(--fg);text-align:left;font:inherit;cursor:pointer;width:100%}
+.step:hover{border-color:var(--line)} .step:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.step .n{font-family:var(--mono);font-size:.78rem;width:22px;height:22px;border-radius:6px;display:grid;place-items:center;border:1px solid var(--line);color:var(--muted);flex:none}
+.step.done .n{background:var(--ok-soft);color:var(--ok);border-color:transparent}
+.step.active{background:var(--panel);border-color:var(--line)} .step.active .n{background:var(--accent);color:#fff;border-color:transparent}
+.step .t{font-weight:600;font-size:.92rem;line-height:1.3} .step .d{color:var(--muted);font-size:.8rem}
+.step[disabled]{opacity:.55;cursor:default}
+.who{margin-top:12px;padding:10px;border:1px dashed var(--line);border-radius:10px;font-size:.8rem;color:var(--muted)}
+.who b{color:var(--fg)}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:22px;min-width:0}
+.panel>section{display:none}.panel>section.on{display:block}
+.head{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:baseline;justify-content:space-between;margin-bottom:14px}
+.head p{margin:4px 0 0;color:var(--muted);max-width:62ch}
+.stack{display:flex;flex-direction:column;gap:14px}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+textarea,input[type=text],select{font:inherit;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:9px;padding:9px 11px;width:100%}
+textarea{min-height:120px;resize:vertical}
+input[type=number]{font-family:var(--mono);font-size:.9rem;width:4.2em;padding:4px 6px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--fg);text-align:right}
+input:focus-visible,textarea:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.btn{font:inherit;font-weight:600;border-radius:9px;padding:9px 14px;border:1px solid var(--line);background:var(--panel);color:var(--fg);cursor:pointer}
+.btn.p{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.btn[disabled]{opacity:.5;cursor:default}
+.files{display:flex;flex-wrap:wrap;gap:8px}
+.file{display:flex;gap:8px;align-items:center;border:1px solid var(--line);border-radius:9px;padding:6px 10px;font-size:.85rem}
+.file .ext{font-family:var(--mono);font-size:.72rem;background:var(--info-soft);padding:1px 6px;border-radius:5px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+.card{border:1px solid var(--line);border-radius:11px;padding:14px;min-width:0}
+.card h3{margin-bottom:6px}
+.kv{display:grid;grid-template-columns:max-content 1fr;gap:4px 12px;font-size:.9rem}
+.kv dt{color:var(--muted)} .kv dd{margin:0}
+.q{border-left:3px solid var(--accent);padding:8px 12px;background:var(--accent-soft);border-radius:0 9px 9px 0}
+.q .lbl{font-size:.78rem;color:var(--muted);letter-spacing:.04em;text-transform:uppercase}
+.opts{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.opts label{border:1px solid var(--line);border-radius:999px;padding:5px 11px;font-size:.88rem;cursor:pointer;display:inline-flex;gap:6px;align-items:center;background:var(--panel)}
+.opts input{accent-color:var(--accent)}
+.tbl{overflow-x:auto;border:1px solid var(--line);border-radius:10px}
+table{border-collapse:collapse;width:100%;font-size:.88rem}
+th,td{padding:7px 9px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{font-size:.76rem;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);font-weight:600;white-space:nowrap}
+td.num,th.num{text-align:right;font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+tr.mod td{font-weight:600;background:var(--bg)}
+tr.sum td{font-weight:700;border-top:2px solid var(--line)}
+tr:last-child td{border-bottom:0}
+.inv{display:flex;flex-wrap:wrap;gap:8px}
+.check{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:10px;border:1px solid var(--line)}
+.check .ic{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-size:.8rem;font-weight:700;flex:none}
+.check.ok .ic{background:var(--ok-soft);color:var(--ok)} .check.warn .ic{background:var(--warn-soft);color:var(--warn)} .check.bad .ic{background:var(--bad-soft);color:var(--bad)} .check.info .ic{background:var(--info-soft);color:var(--muted)}
+.check b{display:block} .check span{color:var(--muted);font-size:.88rem}
+.prog{display:flex;flex-direction:column;gap:8px}
+.pr{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;font-size:.9rem}
+.bar{grid-column:1/-1;height:6px;border-radius:3px;background:var(--line);overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:var(--accent);transition:width .6s ease}
+@media (prefers-reduced-motion:reduce){.bar i{transition:none}}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:.86rem}
+.tag{font-family:var(--mono);font-size:.74rem;padding:1px 6px;border-radius:5px;background:var(--info-soft)}
+.note{font-size:.85rem;color:var(--muted)}
+.matrix td.hit{background:var(--ok-soft);color:var(--ok);text-align:center;font-family:var(--mono)}
+.matrix td.miss{text-align:center;color:var(--muted)}
+.foot{display:flex;flex-wrap:wrap;gap:10px;justify-content:space-between;align-items:center;margin-top:18px;padding-top:14px;border-top:1px solid var(--line)}
+.cost{display:flex;gap:16px;flex-wrap:wrap;font-size:.85rem;color:var(--muted)}
+.cost b{color:var(--fg);font-family:var(--mono)}
+.demo{max-width:1180px;margin:14px auto 0;font-size:.8rem;color:var(--muted)}
+</style>
+
+<div class="top">
+  <div class="brand"><div class="logo">А</div><div><h1>Конструктор программ АЦР</h1><small>Агент собирает комплект, методист утверждает. Прототип интерфейса, данные демонстрационные.</small></div></div>
+  <div class="row"><span class="chip acc" id="stateChip">Черновик · запрос</span><span class="chip">Шаблон: ПК (приказ № 266)</span><span class="chip">Cloud.ru · GigaChat / Qwen</span></div>
+</div>
+
+<div class="app">
+  <nav class="steps" id="steps" aria-label="Шаги">
+    <button class="step active" data-s="1"><span class="n">1</span><span><span class="t">Запрос</span><br><span class="d">тема, часы, референсы</span></span></button>
+    <button class="step" data-s="2"><span class="n">2</span><span><span class="t">Вопросы</span><br><span class="d">только недостающее, ≤ 5</span></span></button>
+    <button class="step" data-s="3"><span class="n">3</span><span><span class="t">Каркас</span><br><span class="d">цель, компетенции, часы</span></span></button>
+    <button class="step" data-s="4"><span class="n">4</span><span><span class="t">Утверждение</span><br><span class="d">методист правит и утверждает</span></span></button>
+    <button class="step" data-s="5"><span class="n">5</span><span><span class="t">Комплект</span><br><span class="d">содержание по модулям</span></span></button>
+    <button class="step" data-s="6"><span class="n">6</span><span><span class="t">Проверка</span><br><span class="d">часы, покрытие, источники</span></span></button>
+    <button class="step" data-s="7"><span class="n">7</span><span><span class="t">Правки</span><br><span class="d">точечно, без пересборки</span></span></button>
+    <button class="step" data-s="8"><span class="n">8</span><span><span class="t">Выгрузка</span><br><span class="d">docx · pptx · GIFT · JSON</span></span></button>
+    <div class="who"><b>Кто в контуре.</b> Шаги 1, 4 и 7 делает методист. Шаги 2, 3, 5, 6, 8 делает агент. Содержание не генерируется, пока каркас не утверждён.</div>
+  </nav>
+
+  <main class="panel">
+
+  <!-- 1 -->
+  <section class="on" id="s1">
+    <div class="head"><div><h2>Запрос методиста</h2><p>Опишите программу свободным текстом и приложите референсы. Агент сам определит шаблон и вытащит параметры.</p></div></div>
+    <div class="stack">
+      <label for="req" class="note">Задача</label>
+      <textarea id="req">Нужна программа повышения квалификации на 72 часа «Анализ данных на Python» для сотрудников региональных отделений банков, которые сейчас работают в Excel. Формат очно-заочный, срок 4 недели. Основные темы: pandas, визуализация, SQL для выгрузки данных и основы статистики. Итоговая аттестация в виде защиты проекта на обезличенных банковских данных. Прикладываю нашу прошлую программу, структуру можно взять оттуда, но содержание нужно новое. Слайды нужны для модуля про pandas.</textarea>
+      <div>
+        <div class="note" style="margin-bottom:6px">Референсы</div>
+        <div class="files">
+          <span class="file"><span class="ext">docx</span>Шаблон ДПП ПК АЦР</span>
+          <span class="file"><span class="ext">docx</span>Стажировка «Бизнес и системный анализ», 248 ч</span>
+          <span class="file"><span class="ext">+</span>добавить .docx / .pdf / ссылку</span>
+        </div>
+      </div>
+      <div class="card">
+        <h3>Что агент понял из запроса</h3>
+        <dl class="kv">
+          <dt>Тип</dt><dd>Повышение квалификации → шаблон ДПП ПК, 273-ФЗ ст. 76, приказ Минобрнауки № 266</dd>
+          <dt>Объём</dt><dd class="mono">72 ч</dd>
+          <dt>Аудитория</dt><dd>сотрудники региональных отделений банков, опыт только в Excel</dd>
+          <dt>Форма и срок</dt><dd>очно-заочная, 4 недели</dd>
+          <dt>Аттестация</dt><dd>защита проекта на обезличенных банковских данных</dd>
+          <dt>Обязательные темы</dt><dd>pandas · визуализация · SQL для выгрузки · основы статистики</dd>
+          <dt>Слайды</dt><dd>модуль про pandas, все лекции</dd>
+          <dt>Референс</dt><dd>структура разделов из приложенной программы, текст не копируется</dd>
+        </dl>
+      </div>
+    </div>
+    <div class="foot"><span class="note">Критичных пробелов: 2. Агент задаст вопросы, прежде чем собирать каркас.</span><button class="btn p" data-go="2">Продолжить</button></div>
+  </section>
+
+  <!-- 2 -->
+  <section id="s2">
+    <div class="head"><div><h2>Уточняющие вопросы</h2><p>Агент спрашивает только о том, что меняет каркас. Всё остальное берёт по умолчанию и показывает, что именно взял.</p></div><span class="chip">2 из максимум 5</span></div>
+    <div class="stack">
+      <div class="q"><div class="lbl">Вопрос 1 · входной уровень</div>Слушатели работают в Excel. Есть ли у них опыт программирования на любом языке?
+        <div class="opts"><label><input type="radio" name="q1" checked>Нет, нужен вводный блок по Python</label><label><input type="radio" name="q1">Есть базовый опыт</label><label><input type="radio" name="q1">Уверенно пишут код</label></div></div>
+      <div class="q"><div class="lbl">Вопрос 2 · очные дни</div>Сколько очных занятий в неделю планируется? От этого зависит календарный график и доля дистанционной работы.
+        <div class="opts"><label><input type="radio" name="q2">1 день</label><label><input type="radio" name="q2" checked>2 дня по 4 часа</label><label><input type="radio" name="q2">3 дня</label></div></div>
+      <div class="card"><h3>Взято по умолчанию</h3><dl class="kv">
+        <dt>Профстандарт</dt><dd>06.042 «Специалист по большим данным» (приказ Минтруда № 405н) <span class="chip ok">сверено с реестром от 30.09.2026</span></dd>
+        <dt>Итоговая аттестация</dt><dd class="mono">4 ч, защита проекта</dd>
+        <dt>Инструменты</dt><dd>Python 3.12, pandas 2.x, matplotlib, PostgreSQL <span class="chip">база актуальности 2026</span></dd>
+      </dl></div>
+    </div>
+    <div class="foot"><button class="btn" data-go="1">Назад</button><button class="btn p" data-go="3" id="buildBtn">Собрать каркас</button></div>
+  </section>
+
+  <!-- 3 -->
+  <section id="s3">
+    <div class="head"><div><h2>Каркас программы</h2><p>Цель, карта компетенций и учебный план. Часы раскладывает код, а не модель, поэтому они сходятся на всех уровнях.</p></div><span class="chip ok" id="skelTime">собран за 1 мин 48 с</span></div>
+    <div class="stack">
+      <div class="card"><h3>Цель</h3>Совершенствование профессиональных компетенций сотрудников банков в области анализа данных на Python для подготовки отчётности и аналитических выводов на основе обезличенных банковских данных.</div>
+      <div class="card"><h3>Карта компетенций</h3>
+        <div class="tbl"><table>
+          <tr><th>Код</th><th>Компетенция</th><th>Связь с ОТФ 06.042</th><th>Результаты обучения</th><th>Темы</th><th>Проверяют</th></tr>
+          <tr><td class="mono">ПК-1</td><td>Загружать и очищать данные в pandas</td><td>ОТФ A, сбор и подготовка данных</td><td class="mono">РО-1, РО-2</td><td class="mono">T1.1–T1.4</td><td class="mono">Q1–Q8, A1</td></tr>
+          <tr><td class="mono">ПК-2</td><td>Визуализировать и интерпретировать показатели</td><td>ОТФ B, анализ данных</td><td class="mono">РО-3, РО-4</td><td class="mono">T2.1–T2.3</td><td class="mono">Q9–Q14, A2</td></tr>
+          <tr><td class="mono">ПК-3</td><td>Выгружать данные SQL-запросами</td><td>ОТФ A</td><td class="mono">РО-5, РО-6</td><td class="mono">T3.1–T3.3</td><td class="mono">Q15–Q20, A3</td></tr>
+          <tr><td class="mono">ПК-4</td><td>Применять базовую статистику к бизнес-вопросам</td><td>ОТФ B</td><td class="mono">РО-7, РО-8</td><td class="mono">T4.1–T4.3</td><td class="mono">Q21–Q26, A4</td></tr>
+          <tr><td class="mono">ПК-5</td><td>Представлять результат анализа заказчику</td><td>ОТФ B</td><td class="mono">РО-9</td><td class="mono">T5.1</td><td class="mono">A5, ИА</td></tr>
+        </table></div>
+        <p class="note" style="margin:8px 0 0">Коды ТФ подставляются из текста профстандарта. Каждый РО раскрыт хотя бы одной темой и проверяется минимум двумя средствами.</p>
+      </div>
+      <div class="card"><h3>Учебный план, 72 ч</h3>
+        <div class="tbl"><table id="plan">
+          <tr><th>№</th><th>Модуль</th><th class="num">Всего</th><th class="num">ЛК</th><th class="num">ПР</th><th class="num">СРС</th><th>Контроль</th></tr>
+          <tr><td class="mono">0</td><td>Вводный блок: Python для тех, кто работает в Excel</td><td class="num">8</td><td class="num">2</td><td class="num">4</td><td class="num">2</td><td>тест</td></tr>
+          <tr><td class="mono">1</td><td>pandas: загрузка, очистка, группировка</td><td class="num">18</td><td class="num">4</td><td class="num">8</td><td class="num">6</td><td>тест, задание</td></tr>
+          <tr><td class="mono">2</td><td>Визуализация и интерпретация</td><td class="num">12</td><td class="num">2</td><td class="num">6</td><td class="num">4</td><td>задание</td></tr>
+          <tr><td class="mono">3</td><td>SQL для выгрузки данных</td><td class="num">12</td><td class="num">2</td><td class="num">6</td><td class="num">4</td><td>тест, задание</td></tr>
+          <tr><td class="mono">4</td><td>Основы статистики для бизнес-вопросов</td><td class="num">12</td><td class="num">2</td><td class="num">6</td><td class="num">4</td><td>тест</td></tr>
+          <tr><td class="mono">5</td><td>Подготовка итогового проекта</td><td class="num">6</td><td class="num">0</td><td class="num">2</td><td class="num">4</td><td>консультация</td></tr>
+          <tr><td></td><td>Итоговая аттестация: защита проекта</td><td class="num">4</td><td class="num">0</td><td class="num">4</td><td class="num">0</td><td>зачёт</td></tr>
+          <tr class="sum"><td></td><td>Итого</td><td class="num">72</td><td class="num">12</td><td class="num">36</td><td class="num">24</td><td></td></tr>
+        </table></div>
+        <div class="inv" style="margin-top:10px"><span class="chip ok">68 + 4 = 72 ✓</span><span class="chip ok">ЛК + ПР + СРС = Всего в каждой строке ✓</span><span class="chip ok">19 тем, суммы тем = модули ✓</span><span class="chip ok">график: 4 недели, 2 очных дня × 4 ч ✓</span></div>
+      </div>
+    </div>
+    <div class="foot"><button class="btn" data-go="2">Назад</button><button class="btn p" data-go="4">К утверждению</button></div>
+  </section>
+
+  <!-- 4 -->
+  <section id="s4">
+    <div class="head"><div><h2>Правка и утверждение каркаса</h2><p>Измените часы любого модуля. Итоги пересчитываются сразу, а инварианты показывают, можно ли утверждать.</p></div></div>
+    <div class="stack">
+      <div class="tbl"><table id="edit">
+        <tr><th>Модуль</th><th class="num">ЛК</th><th class="num">ПР</th><th class="num">СРС</th><th class="num">Всего</th></tr>
+        <tr data-m><td>0. Вводный блок Python</td><td class="num"><input type="number" min="0" value="2" id="h0l"></td><td class="num"><input type="number" min="0" value="4" id="h0p"></td><td class="num"><input type="number" min="0" value="2" id="h0s"></td><td class="num" data-t>8</td></tr>
+        <tr data-m><td>1. pandas</td><td class="num"><input type="number" min="0" value="4" id="h1l"></td><td class="num"><input type="number" min="0" value="8" id="h1p"></td><td class="num"><input type="number" min="0" value="6" id="h1s"></td><td class="num" data-t>18</td></tr>
+        <tr data-m><td>2. Визуализация</td><td class="num"><input type="number" min="0" value="2" id="h2l"></td><td class="num"><input type="number" min="0" value="6" id="h2p"></td><td class="num"><input type="number" min="0" value="4" id="h2s"></td><td class="num" data-t>12</td></tr>
+        <tr data-m><td>3. SQL</td><td class="num"><input type="number" min="0" value="2" id="h3l"></td><td class="num"><input type="number" min="0" value="6" id="h3p"></td><td class="num"><input type="number" min="0" value="4" id="h3s"></td><td class="num" data-t>12</td></tr>
+        <tr data-m><td>4. Статистика</td><td class="num"><input type="number" min="0" value="2" id="h4l"></td><td class="num"><input type="number" min="0" value="6" id="h4p"></td><td class="num"><input type="number" min="0" value="4" id="h4s"></td><td class="num" data-t>12</td></tr>
+        <tr data-m><td>5. Подготовка проекта</td><td class="num"><input type="number" min="0" value="0" id="h5l"></td><td class="num"><input type="number" min="0" value="2" id="h5p"></td><td class="num"><input type="number" min="0" value="4" id="h5s"></td><td class="num" data-t>6</td></tr>
+        <tr><td>Итоговая аттестация</td><td class="num">0</td><td class="num"><input type="number" min="0" value="4" id="hia"></td><td class="num">0</td><td class="num" id="tia">4</td></tr>
+        <tr class="sum"><td>Итого</td><td class="num" id="tl">12</td><td class="num" id="tp">36</td><td class="num" id="ts">24</td><td class="num" id="tt">72</td></tr>
+      </table></div>
+      <div class="inv" id="invs"></div>
+      <div class="row"><label class="note" for="cmt">Комментарий к каркасу</label></div>
+      <input type="text" id="cmt" placeholder="Например: практики по SQL сделать на банковских выгрузках">
+    </div>
+    <div class="foot"><button class="btn" data-go="3">Назад</button><div class="row"><span class="note" id="apprNote">Утверждение открывает генерацию содержания.</span><button class="btn p" id="approve">Утвердить каркас</button></div></div>
+  </section>
+
+  <!-- 5 -->
+  <section id="s5">
+    <div class="head"><div><h2>Сборка комплекта</h2><p>Модули генерируются параллельно. Каждый шаг это отдельный навык со своей инструкцией и схемой результата.</p></div><span class="chip" id="genChip">ожидание</span></div>
+    <div class="stack">
+      <div class="prog" id="prog"></div>
+      <div class="grid2" id="artifacts" hidden>
+        <div class="card"><h3>Рабочие программы модулей</h3><span class="note">6 модулей, 19 тем, содержание по видам работ с часами</span></div>
+        <div class="card"><h3>Тесты</h3><span class="note">26 вопросов с ключами, каждый привязан к РО и теме</span></div>
+        <div class="card"><h3>Задания семинаров</h3><span class="note">5 заданий на банковских ситуациях (отток, просрочка, сегментация) с критериями оценки</span></div>
+        <div class="card"><h3>Лекции и слайды</h3><span class="note">Модуль 1 pandas: 2 лекции, 24 слайда; планы лекций для остальных модулей</span></div>
+        <div class="card"><h3>Итоговая аттестация</h3><span class="note">Требования к проекту, к данным (обезличивание), критерии защиты</span></div>
+        <div class="card"><h3>Источники</h3><span class="note">9 позиций: нормативные акты, литература, документация. 1 помечен «требует подтверждения»</span></div>
+      </div>
+    </div>
+    <div class="foot"><button class="btn" data-go="4">Назад</button><button class="btn p" data-go="6" id="toVerify" disabled>К отчёту проверки</button></div>
+  </section>
+
+  <!-- 6 -->
+  <section id="s6">
+    <div class="head"><div><h2>Отчёт самопроверки</h2><p>Проверки кодом плюс рецензия модели. Методист видит, что именно подтверждено и что требует его решения.</p></div><span class="chip warn">2 предупреждения</span></div>
+    <div class="stack">
+      <div class="check ok"><div class="ic">✓</div><div><b>Часы сходятся на трёх уровнях</b><span>19 тем → 6 модулей → 68 + 4 = 72. Итоговая строка пересчитана, не скопирована.</span></div></div>
+      <div class="check ok"><div class="ic">✓</div><div><b>Покрытие компетенций полное</b><span>9 РО, каждый раскрыт ≥ 1 темой и проверяется ≥ 2 оценочными средствами. Матрица ниже.</span></div></div>
+      <div class="check warn"><div class="ic">!</div><div><b>Референс ссылается на недействующий приказ</b><span>В приложенной программе указан приказ Минобрнауки № 499 от 01.07.2013. Он утратил силу с 01.09.2025. В новой программе использован приказ № 266 от 24.03.2025.</span></div></div>
+      <div class="check warn"><div class="ic">!</div><div><b>Один источник не подтверждён</b><span>«Руденко Т. А. Бизнес-анализ и управление требованиями» не найден в базе. В документе помечен «[требует подтверждения]». Остальные 8 источников подтверждены.</span></div></div>
+      <div class="check ok"><div class="ic">✓</div><div><b>Профстандарт и ТФ существуют</b><span>06.042, приказ Минтруда № 405н, сверено с реестром от 30.09.2026.</span></div></div>
+      <div class="check ok"><div class="ic">✓</div><div><b>Полнота разделов шаблона ДПП ПК</b><span>Все 17 обязательных разделов заполнены. Реквизиты приказа, ФИО преподавателей и подписи оставлены пустыми.</span></div></div>
+      <div class="check info"><div class="ic">i</div><div><b>Ожидания заказчика и результаты</b><span>Заявка просит «новое содержание»: совпадений с референсом по формулировкам тем нет, структура разделов сохранена.</span></div></div>
+      <div class="card"><h3>Матрица трассировки (фрагмент)</h3>
+        <div class="tbl"><table class="matrix">
+          <tr><th>РО</th><th>Темы</th><th>Тест</th><th>Задание</th><th>ИА</th></tr>
+          <tr><td class="mono">РО-1</td><td class="hit">T1.1, T1.2</td><td class="hit">Q1–Q4</td><td class="hit">A1</td><td class="miss">·</td></tr>
+          <tr><td class="mono">РО-2</td><td class="hit">T1.3, T1.4</td><td class="hit">Q5–Q8</td><td class="hit">A1</td><td class="hit">проект</td></tr>
+          <tr><td class="mono">РО-3</td><td class="hit">T2.1, T2.2</td><td class="hit">Q9–Q11</td><td class="hit">A2</td><td class="miss">·</td></tr>
+          <tr><td class="mono">РО-9</td><td class="hit">T5.1</td><td class="miss">·</td><td class="hit">A5</td><td class="hit">защита</td></tr>
+        </table></div>
+      </div>
+    </div>
+    <div class="foot"><button class="btn" data-go="5">Назад</button><div class="row"><button class="btn" data-go="7">Внести правку</button><button class="btn p" data-go="8">К выгрузке</button></div></div>
+  </section>
+
+  <!-- 7 -->
+  <section id="s7">
+    <div class="head"><div><h2>Точечная правка</h2><p>Агент находит затронутые узлы по графу зависимостей и пересобирает только их. Остальной комплект не меняется.</p></div></div>
+    <div class="stack">
+      <label class="note" for="patch">Что изменить</label>
+      <input type="text" id="patch" value="Заменить тему 1.3 «Группировка и агрегирование» на тему про временные ряды и скользящие средние">
+      <button class="btn p" id="patchBtn" style="align-self:flex-start">Показать, что будет затронуто</button>
+      <div class="card" id="patchOut" hidden>
+        <h3>Будет пересобрано</h3>
+        <div class="row"><span class="tag">T1.3</span><span class="tag">Q5 Q6 Q7</span><span class="tag">A1 (критерий 2)</span><span class="tag">Лекция 1.2, слайды 9–16</span><span class="tag">РО-2 формулировка</span></div>
+        <p class="note" style="margin:8px 0 0">Часы темы 1.3 (ЛК 1, ПР 2, СРС 2) сохраняются, суммы не меняются. Не затронуто: модули 0, 2–5, тесты Q1–Q4 и Q8–Q26, задания A2–A5.</p>
+        <div class="row" style="margin-top:10px"><button class="btn p" id="patchGo">Пересобрать только это</button><span class="chip ok" id="patchDone" hidden>готово, проверка затронутого пройдена</span></div>
+      </div>
+    </div>
+    <div class="foot"><button class="btn" data-go="6">К отчёту</button><button class="btn p" data-go="8">К выгрузке</button></div>
+  </section>
+
+  <!-- 8 -->
+  <section id="s8">
+    <div class="head"><div><h2>Выгрузка</h2><p>Все файлы рендерятся из одного JSON-комплекта, поэтому тесты, слайды и программа не могут разойтись.</p></div><span class="chip ok">черновик готов к проверке методистом</span></div>
+    <div class="grid2">
+      <div class="card"><h3>Программа .docx</h3><span class="note">По шаблону ДПП ПК АЦР: 17 разделов, учебный план, УТП, график, рабочие программы, оценочные материалы, приложения</span></div>
+      <div class="card"><h3>Слайды .pptx</h3><span class="note">Модуль 1 pandas, 24 слайда, план каждой лекции в заметках</span></div>
+      <div class="card"><h3>Тесты для LMS</h3><span class="note">GIFT и CSV, 26 вопросов с ключами и привязкой к РО</span></div>
+      <div class="card"><h3>Комплект .json</h3><span class="note">Источник правды: все сущности с идентификаторами и связями, отчёт проверки, история правок</span></div>
+    </div>
+    <div class="foot"><div class="cost"><span>Время агента: <b>14 мин 20 с</b></span><span>Токены Cloud.ru: <b>312 тыс.</b></span><span>Оценка стоимости: <b>≈ 40 ₽</b></span><span>Ручная сборка: <b>2–8 недель</b></span></div><span class="note">В прототипе файлы не формируются.</span></div>
+  </section>
+
+  </main>
+</div>
+<p class="demo">Прототип для продуктового чекпоинта 15.10.2026, команда Румянцев П. и Харченко Л. Сценарий построен на открытом тест-кейсе 3 «Анализ данных на Python» (72 ч). Цифры и формулировки демонстрационные, бэкенда нет.</p>
+
+<script>
+(function(){
+  var cur=1, approved=false, generated=false;
+  var steps=document.querySelectorAll('.step');
+  var labels={1:'Черновик · запрос',2:'Черновик · вопросы',3:'Каркас собран',4:'Каркас на утверждении',5:'Генерация содержания',6:'Проверка',7:'Правки',8:'Готов к выгрузке'};
+  function go(n){
+    if(n>=5 && !approved){ document.getElementById('apprNote').textContent='Сначала утвердите каркас.'; n=4; }
+    cur=n;
+    document.querySelectorAll('.panel>section').forEach(function(s,i){ s.classList.toggle('on', i+1===n); });
+    steps.forEach(function(b,i){ b.classList.toggle('active', i+1===n); b.classList.toggle('done', i+1<n); });
+    document.getElementById('stateChip').textContent=labels[n];
+    if(n===5 && !generated) runGen();
+    document.querySelector('.panel').scrollIntoView({block:'start',behavior:'smooth'});
+  }
+  steps.forEach(function(b){ b.addEventListener('click',function(){ go(+b.dataset.s); }); });
+  document.querySelectorAll('[data-go]').forEach(function(b){ b.addEventListener('click',function(){ go(+b.dataset.go); }); });
+
+  /* hours engine demo: recompute totals and invariants */
+  var ed=document.getElementById('edit');
+  function recalc(){
+    var tl=0,tp=0,ts=0,tt=0, ok=true;
+    ed.querySelectorAll('tr[data-m]').forEach(function(tr){
+      var v=[].map.call(tr.querySelectorAll('input'),function(i){return +i.value||0});
+      var t=v[0]+v[1]+v[2]; tr.querySelector('[data-t]').textContent=t; tl+=v[0];tp+=v[1];ts+=v[2];tt+=t;
+    });
+    var ia=+document.getElementById('hia').value||0; document.getElementById('tia').textContent=ia; tp+=ia; tt+=ia;
+    document.getElementById('tl').textContent=tl; document.getElementById('tp').textContent=tp; document.getElementById('ts').textContent=ts; document.getElementById('tt').textContent=tt;
+    var inv=[];
+    function add(c,t){inv.push('<span class="chip '+c+'">'+t+'</span>'); if(c==='bad') ok=false;}
+    add(tt===72?'ok':'bad', (tt-ia)+' + '+ia+' = '+tt+(tt===72?' ✓ запрошено 72':' ✗ запрошено 72, разница '+(tt-72)));
+    var pr=tp/tt; add(pr>=0.4?'ok':'warn','практика '+Math.round(pr*100)+'% '+(pr>=0.4?'✓':'ниже 40%, обычно для ПК мало'));
+    add(ia>=2?'ok':'bad','итоговая аттестация '+ia+' ч'+(ia>=2?' ✓':' ✗ меньше 2 ч'));
+    var week=(tt-ts)/4; add(week<=12?'ok':'warn','очная нагрузка ≈ '+Math.round(week)+' ч/нед при 4 неделях'+(week<=12?' ✓':', больше 12'));
+    document.getElementById('invs').innerHTML=inv.join('');
+    var ap=document.getElementById('approve'); ap.disabled=!ok; document.getElementById('apprNote').textContent= ok?'Инварианты выполнены, можно утверждать.':'Исправьте часы: красные проверки блокируют утверждение.';
+  }
+  ed.addEventListener('input',recalc); recalc();
+  document.getElementById('approve').addEventListener('click',function(){ approved=true; this.textContent='Каркас утверждён'; this.disabled=true; document.getElementById('apprNote').textContent='Утверждено методистом. Генерация содержания открыта.'; setTimeout(function(){go(5)},500); });
+
+  /* generation simulation */
+  var jobs=[['Рабочие программы модулей 0–5',1400],['Тесты с ключами и привязкой к РО',1100],['Задания семинаров и критерии',900],['Планы лекций и слайды модуля 1',1500],['Источники и нормативная база',700],['Самопроверка и рецензия',800]];
+  function runGen(){
+    generated=true; var box=document.getElementById('prog'); box.innerHTML=''; document.getElementById('genChip').textContent='идёт';
+    var done=0;
+    jobs.forEach(function(j,k){
+      var d=document.createElement('div'); d.className='pr'; d.innerHTML='<span>'+j[0]+'</span><span class="mono" data-st>в очереди</span><div class="bar"><i></i></div>'; box.appendChild(d);
+      setTimeout(function(){ d.querySelector('[data-st]').textContent='генерация'; d.querySelector('i').style.width='100%'; },200+k*250);
+      setTimeout(function(){ d.querySelector('[data-st]').textContent='готово · схема валидна'; done++; if(done===jobs.length){ document.getElementById('genChip').textContent='готово за 14 мин 20 с (имитация)'; document.getElementById('artifacts').hidden=false; document.getElementById('toVerify').disabled=false; } },200+k*250+j[1]);
+    });
+  }
+  document.getElementById('patchBtn').addEventListener('click',function(){ document.getElementById('patchOut').hidden=false; });
+  document.getElementById('patchGo').addEventListener('click',function(){ this.disabled=true; var c=document.getElementById('patchDone'); setTimeout(function(){c.hidden=false},900); });
+})();
+</script>
